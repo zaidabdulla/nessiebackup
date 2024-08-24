@@ -1,0 +1,39 @@
+//################################################
+//Day-1 Processing : feed_day6
+
+//Create Branch
+CREATE BRANCH IF NOT EXISTS br_day6 IN nessie;
+
+//Load file on day6 in branch with delta
+INSERT INTO nessie.inventory AT REF br_day6
+SELECT * FROM  minio.datalake.feed."feed_day6.csv"
+WHERE location_id NOT IN (SELECT DISTINCT location_id FROM nessie.inventory AT REF br_day6);
+
+USE BRANCH br_day6 IN nessie;
+UPDATE nessie.inventory SET quantity_available = CAST(T1.quantity_available AS INTEGER) + CAST(T2.quantity_available AS INTEGER) FROM minio.datalake.feed."feed_day6.csv" T1 INNER JOIN  nessie.inventory T2 ON T2.location_id = T1.location_id;
+
+USE BRANCH br_day6 IN nessie;
+select CAST(T1.quantity_available AS INTEGER),T2.quantity_available
+FROM minio.datalake.feed."feed_day6.csv" T1 INNER JOIN  nessie.inventory T2 ON T2.location_id = T1.location_id;
+
+//Records loaded in branch
+SELECT * FROM nessie.inventory AT REF br_day6;
+SELECT * FROM minio.datalake.feed."feed_day6.csv"
+
+//Merge to master
+MERGE BRANCH br_day6 INTO main IN nessie;
+
+SELECT * FROM nessie.inventory AT REF br_day6 ORDER BY 4;
+SELECT * FROM nessie.inventory AT REF main ORDER BY 4;
+
+//CREATE TAG EoD ;
+CREATE TAG IF NOT EXISTS tag_day6 AT REF main IN nessie;
+
+USE BRANCH tag_day6 IN nessie;
+//DELETE FROM nessie.inventory WHERE product_name = 'Gadget C';
+//UPDATE nessie.inventory SET quantity_available = '121' WHERE product_name = 'Tool E';
+
+//Rollback
+SELECT * FROM nessie.inventory AT REF main;
+ALTER BRANCH main ASSIGN TAG tag_day4 IN nessie;
+SELECT * FROM nessie.inventory AT REF main;
