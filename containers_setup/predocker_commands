@@ -1,0 +1,64 @@
+Pre Installations:
+sudo yum install -y yum-utils
+sudo yum-config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+
+sudo yum install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+sudo systemctl start docker
+sudo docker run hello-world
+
+sudo yum install python3
+
+sudo dnf install python3-requests
+sudo dnf install python3-pip
+
+sudo dnf install --nobest docker-ce
+sudo dnf install https://download.docker.com/linux/centos/7/x86_64/stable/Packages/containerd.io-1.2.6-3.3.el7.x86_64.rpm
+
+curl -L "https://github.com/docker/compose/releases/download/1.23.2/docker-compose-$(uname -s)-$(uname -m)" -o docker-compose
+
+Docker Compose:
+sudo pip3 install --upgrade pip
+sudo pip3 install docker-compose
+docker-compose --version
+
+#########################################Make containers up following URL########################
+
+URL: https://iceberg.apache.org/spark-quickstart/#docker-compose
+#################################################################################################
+Pull and Run Images:
+
+sudo docker pull tabulario/spark-iceberg
+sudo docker run -p 8888:8888 tabulario/spark-iceberg
+sudo docker run -p 8181:8181 tabulario/iceberg-rest
+
+Make solo container up:
+docker compose up minio
+
+Containers running:
+sudo docker ps
+
+Stop Containers:
+sudo docker stop f125f8e0f459 $contaier_id
+
+sudo docker pull tabulario/iceberg-rest
+
+Python:
+sudo docker pull alexmerced/spark33-notebook
+
+docker-compose up Failure Actions:
+	1. updated docker-compose.yml file path of spark, marked it to .
+		-  build: spark/ (Before)
+		-  build: . 	 (After)	
+	2. Added azureuser to docker group using below commands.
+		- sudo gpasswd -a azureuser docker
+		- newgrp docker
+
+		- Check group:  cat /etc/group | grep docker
+
+Installed pynessie module:
+pip install pynessie==0.5.1
+
+To make jupyter notebook up, run below
+docker exec -it spark-iceberg notebook
+	
