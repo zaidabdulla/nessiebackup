@@ -1,0 +1,11 @@
+product_name, location_id, location_name, quantity_available, reorder_level
+Widget A, 51, Warehouse X51, -150, 50
+Widget B, 52, Warehouse X52, -90, 30
+Gadget C, 53, Warehouse Y53, -200, 75
+Gadget D, 54, Warehouse Y54, -60, 20
+Tool E, 55, Warehouse Z55, -120, 40
+Tool F, 56, Warehouse Z56, -30, 10
+Material G, 57, Warehouse A57, 800, 100
+Material H, 58, Warehouse A58, 500, 150
+Component I, 59, Warehouse B59, 450, 125
+Component J, 60, Warehouse B60, 300, 100
