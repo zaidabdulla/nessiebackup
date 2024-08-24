@@ -1,0 +1,50 @@
+//#####################################
+//Day-5 processing
+
+//Drop past branch if exists
+DROP BRANCH IF EXISTS br_day4 IN nessie;
+
+//Create branch
+CREATE BRANCH IF NOT EXISTS br_day5 IN nessie;
+
+
+
+//Update if same location production received
+USE BRANCH br_day5 IN NESSIE;
+UPDATE nessie.inventory as T3 SET quantity_available = (CAST(T1.quantity_available AS INTEGER) + CAST(T3.quantity_available AS INTEGER)) FROM minio.datalake.feed."feed_day5.csv" T1 
+WHERE T3.location_id = T1.location_id;
+
+//Show quantity against location_id = 10
+SELECT 'day5' as "Branch",* FROM nessie.inventory AT REF br_day5 WHERE location_id = 10
+UNION ALL SELECT 'main' as "Branch",* FROM nessie.inventory AT REF main WHERE location_id = 10;
+
+
+
+
+//Load file on day5 in branch with delta
+INSERT INTO nessie.inventory AT REF br_day5
+SELECT * FROM  minio.datalake.feed."feed_day5.csv"
+WHERE location_id NOT IN (SELECT DISTINCT location_id FROM nessie.inventory AT REF br_day5);
+
+//Records branch vs master before merge
+SELECT * FROM nessie.inventory AT REF br_day5;
+SELECT * FROM nessie.inventory AT REF main;
+
+
+
+
+
+//Merge to master
+MERGE BRANCH br_day5 INTO main IN nessie;
+
+//Records branch vs master post merge
+SELECT * FROM nessie.inventory AT REF br_day5;
+SELECT * FROM nessie.inventory AT REF main;
+
+
+
+
+//CREATE TAG EoD
+CREATE TAG IF NOT EXISTS tag_day5 AT REF main IN nessie;
+
+
