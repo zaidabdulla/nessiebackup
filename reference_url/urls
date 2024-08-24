@@ -3,3 +3,11 @@ Docker Setup: https://iceberg.apache.org/spark-quickstart/#writing-data-to-a-tab
 Read Parquet File: https://dataconverter.io/view/parquet
 
 Read avro: https://konbert.com/viewer/avro
+
+Tools:
+
+Dremio: http://10.2.172.4:9047/
+Nessie: http://10.2.172.4:19120/
+Minio: http://10.2.172.4:9001/
+Jupyter Notebook: http://10.2.172.6:8888/
+
