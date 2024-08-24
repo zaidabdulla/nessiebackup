@@ -1,0 +1,77 @@
+// Master table records
+SELECT * FROM nessie.inventory AT REF main;
+
+// Master table records
+SELECT * FROM nessie.inventory AT REF main WHERE location_id = 10;
+
+
+
+
+
+//##########################################################################################
+//Rollback
+ALTER BRANCH main ASSIGN TAG tag_day5 IN nessie;
+
+
+
+
+
+
+
+
+
+//##########################################################################################
+
+//Check History of table
+SELECT * FROM TABLE(table_history('nessie.inventory'));
+
+//Check Files associated with this table
+SELECT * FROM TABLE(table_files('nessie.inventory'));
+
+SELECT * FROM INFORMATION_SCHEMA.COLUMNS;
+
+
+
+//################################################
+//Drop
+DROP BRANCH IF EXISTS br_day5 IN nessie;
+DROP TAG tag_day6 IN nessie;
+DROP TABLE IF EXISTS nessie.inventory AT REF main;
+
+//################################################
+
+//Postgresql
+SELECT * FROM postgres.public.inventory;
+SELECT * FROM postgres.public.inventory_stg;
+
+
+CREATE TABLE nessie.supplychain.raw.inventory AS SELECT * FROM postgres.public.inventory;
+
+SELECT 'main' as Main_Branch,* FROM nessie.supplychain.raw.inventory AT REF main ORDER BY product_id;
+
+//CREATE TAG inventory_tag180724 ;
+CREATE TAG IF NOT EXISTS inventory_tag180724 AT REF main IN nessie;
+
+CREATE BRANCH IF NOT EXISTS ingest IN nessie;
+
+SELECT 'ingest' as Ingest_Branch,* FROM nessie.supplychain.raw.inventory AT REF ingest ORDER BY product_id;
+
+USE BRANCH ingest IN NESSIE;
+
+INSERT INTO nessie.supplychain.raw.inventory
+SELECT *
+FROM postgres.public."inventory_stg"
+WHERE product_id > (SELECT COALESCE(MAX(product_id), 0) FROM nessie.supplychain.raw.inventory);
+
+SELECT 'main' as Main_Branch,* FROM nessie.supplychain.raw.inventory AT REF main ORDER BY product_id;
+SELECT 'ingest' as Ingest_Branch,* FROM nessie.supplychain.raw.inventory AT REF ingest ORDER BY product_id;
+
+MERGE BRANCH ingest INTO main IN nessie;
+
+ALTER BRANCH main ASSIGN TAG inventory_tag180724 IN nessie;
+
+SELECT 'main' as Main_Branch,* FROM nessie.supplychain.raw.inventory AT REF main ORDER BY product_id;
+SELECT 'ingest' as Ingest_Branch,* FROM nessie.supplychain.raw.inventory AT REF ingest ORDER BY product_id;
+
+
+
