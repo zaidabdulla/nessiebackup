@@ -1,0 +1,29 @@
+//#############################
+//Day-1 processing
+
+//Create branch
+CREATE BRANCH IF NOT EXISTS br_day1 IN nessie;
+
+//CREATE Table
+CREATE TABLE IF NOT EXISTS nessie.ref_trading_acct AT REF br_day1
+AS SELECT * FROM  minio.datalake.subledger."ref_trading_acct_day1.csv";
+
+//USE BRANCH br_day1 IN NESSIE;
+
+//Records branch vs master before merge;
+SELECT * FROM nessie.ref_trading_acct AT REF br_day1;
+//SELECT * FROM nessie.ref_trading_acct AT REF main;
+
+//Merge to master
+MERGE BRANCH br_day1 INTO main IN nessie;
+
+//Records branch vs master post merge
+SELECT * FROM nessie.ref_trading_acct AT REF br_day1;
+SELECT * FROM nessie.ref_trading_acct AT REF main;
+
+//CREATE TAG EoD
+CREATE TAG IF NOT EXISTS tag_subledger_day1 AT REF main IN nessie;
+INSERT INTO nessie.commit_history VALUES('tag_subledger_day1',CURRENT_DATE());
+
+
+select * from nessie.commit_history;
