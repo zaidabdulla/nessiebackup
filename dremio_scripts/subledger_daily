@@ -1,0 +1,41 @@
+//#############################
+//Day processing
+
+//Create branch
+CREATE BRANCH IF NOT EXISTS br_day2 IN nessie;
+
+SELECT 'TRD_ACCT',* FROM nessie.ref_trading_acct AT REF br_day2 UNION ALL
+SELECT 'DAY2_CSV',* FROM minio.datalake.subledger."ref_trading_acct_day2.csv";
+
+
+//Update from_valid for existing trading_accnt as per latest file
+USE BRANCH br_day2 IN nessie;
+UPDATE nessie.ref_trading_acct T1 SET valid_from = T2.valid_from FROM  minio.datalake.subledger."ref_trading_acct_day2.csv" T2 
+Where T2.trd_acct_num = T1.trd_acct_num
+AND TO_DATE(T2.valid_from,'DD/MM/YYYY',1) > TO_DATE(T1.valid_from,'DD/MM/YYYY',1);
+
+//Insert new trading_accnt as per latest file
+USE BRANCH br_day2 IN nessie;
+INSERT INTO nessie.ref_trading_acct
+SELECT  * FROM  minio.datalake.subledger."ref_trading_acct_day2.csv" T2 
+Where T2.trd_acct_num NOT IN (SELECT trd_acct_num FROM nessie.ref_trading_acct )
+
+//USE BRANCH br_day1 IN NESSIE;
+
+//Records branch vs master before merge;
+SELECT * FROM nessie.ref_trading_acct AT REF br_day2 union all
+SELECT * FROM nessie.ref_trading_acct AT REF main;
+
+//Merge to master
+MERGE BRANCH br_day2 INTO main IN nessie;
+
+//Records branch vs master post merge
+SELECT * FROM nessie.ref_trading_acct AT REF br_day2;
+SELECT * FROM nessie.ref_trading_acct AT REF main;
+
+//CREATE TAG EoD
+CREATE TAG IF NOT EXISTS tag_subledger_day2 AT REF main IN nessie;
+INSERT INTO nessie.commit_history VALUES('tag_subledger_day2',CURRENT_DATE());
+
+
+select * from nessie.commit_history;
