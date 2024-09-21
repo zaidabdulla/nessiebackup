@@ -1,0 +1,106 @@
+//#############################Day-1 processing#############################
+
+//Create branch
+CREATE BRANCH IF NOT EXISTS br_day1 IN nessie;
+
+//Day1 feed load
+CREATE TABLE IF NOT EXISTS nessie.trading_acct AT REF br_day1 AS SELECT * FROM  minio.datalake.subledger."ref_trading_acct_day1.csv";
+
+CREATE TABLE IF NOT EXISTS nessie.subledger_bal AT REF br_day1 AS SELECT * FROM minio.datalake.subledger."subledger_day1.csv";
+
+//Update acc_id of subledger via trad_acct
+USE BRANCH br_day1 IN nessie;
+UPDATE nessie.subledger_bal sublgr 
+SET account_id = trd_acct.account_id 
+FROM  nessie.trading_acct  trd_acct
+Where trd_acct.trd_acct_num = sublgr.account_no;
+
+//Loaded feeds in branch
+USE BRANCH br_day1 IN nessie;
+SELECT * FROM nessie.trading_acct;
+SELECT * FROM nessie.subledger_bal;
+
+//Merge to master
+MERGE BRANCH br_day1 INTO main IN nessie;
+
+//Records branch vs master post merge
+SELECT 'br_day1' as "BRANCH",* FROM nessie.trading_acct AT REF br_day1 UNION ALL
+SELECT 'main' as "BRANCH",* FROM nessie.trading_acct AT REF main;
+
+SELECT 'br_day1' as "BRANCH",* FROM nessie.subledger_bal AT REF br_day1 UNION ALL
+SELECT 'main' as "BRANCH",* FROM nessie.subledger_bal AT REF main;
+
+//CREATE TAG EoD
+CREATE TAG IF NOT EXISTS tag_day1 AT REF main IN nessie;
+INSERT INTO nessie.commit_history VALUES('tag_day1',DATE_ADD(CURRENT_DATE(),0));
+
+
+select * from nessie.commit_history;
+
+//#############################Day-2 processing#############################
+//Create branch
+CREATE BRANCH IF NOT EXISTS br_day2 IN nessie;
+
+//###########################Dim data processing############################
+//Delete account having past validity
+USE BRANCH br_day2 IN nessie;
+DELETE FROM nessie.trading_acct trd_acct
+where TO_DATE(trd_acct.valid_from,'DD/MM/YYYY',1) < CURRENT_DATE()
+AND TO_DATE(trd_acct.valid_to,'DD/MM/YYYY',1) < CURRENT_DATE();
+
+//Insert new trading_accnt as per latest file
+USE BRANCH br_day2 IN nessie;
+INSERT INTO nessie.trading_acct
+SELECT  * FROM  minio.datalake.subledger."ref_trading_acct_day2.csv"  trd_acct_fl
+Where trd_acct_fl.trd_acct_num NOT IN (SELECT trd_acct_num FROM nessie.trading_acct);
+
+//Records branch vs master before merge;
+SELECT 'br_day2' as "BRANCH",* FROM nessie.trading_acct AT REF br_day2 UNION ALL
+SELECT 'main' as "BRANCH",* FROM nessie.trading_acct AT REF main ORDER BY 1,2;
+
+//###########################Fact data processing###########################
+USE BRANCH br_day2 IN nessie;
+DELETE FROM nessie.subledger_bal;
+
+//Day2 fact data load
+INSERT INTO nessie.subledger_bal SELECT  * FROM  minio.datalake.subledger."subledger_day2.csv";
+
+//Update acc_id of subledger via trad_acct
+USE BRANCH br_day2 IN nessie;
+UPDATE nessie.subledger_bal sublgr 
+SET account_id = trd_acct.account_id 
+FROM  nessie.trading_acct  trd_acct
+Where trd_acct.trd_acct_num = sublgr.account_no;
+
+//Records branch vs master before merge;
+SELECT 'br_day2' as "BRANCH",* FROM nessie.subledger_bal AT REF br_day2 UNION ALL
+SELECT 'main' as "BRANCH",* FROM nessie.subledger_bal AT REF main ORDER BY 1,2;
+
+//#########################################################################
+
+//Merge to master
+MERGE BRANCH br_day2 INTO main IN nessie;
+
+//Records branch vs master post merge
+SELECT 'br_day2' as "BRANCH",* FROM nessie.trading_acct AT REF br_day2 UNION ALL
+SELECT 'main' as "BRANCH",* FROM nessie.trading_acct AT REF main ORDER BY 1,2;
+
+SELECT 'br_day2' as "BRANCH",* FROM nessie.subledger_bal AT REF br_day2 UNION ALL
+SELECT 'main' as "BRANCH",* FROM nessie.subledger_bal AT REF main ORDER BY 1,2;
+
+
+//CREATE TAG EoD
+CREATE TAG IF NOT EXISTS tag_day2 AT REF main IN nessie;
+INSERT INTO nessie.commit_history VALUES('tag_day2',DATE_ADD(CURRENT_DATE(),1));
+
+
+select * from nessie.commit_history;
+
+##################################Time Travel###############################
+//Day1 time travel
+SELECT * FROM nessie.trading_acct AT REF tag_day1;
+SELECT * FROM nessie.subledger_bal AT REF tag_day1;
+
+//Rollback
+ALTER BRANCH main ASSIGN TAG tag_day1 IN nessie;
+DELETE FROM nessie.commit_history where tag_id ='tag_day2'
