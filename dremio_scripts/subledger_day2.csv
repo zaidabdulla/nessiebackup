@@ -1,4 +1,0 @@
-psk_id|account_no|account_id|position_typ_code|cusip|p_l_date|transaction_currency_code|tran_currency_bal_amt|fc_component_id|a_create_date|a_create_id|a_update_date|a_update_time|a_update_id
-psk_id1|0809_accnt1||LSE_dummy1|99AK_cusip_1|01/01/2024|USD|127000.00|1121_comp1|01/01/2024|22:27:56|01/01/2024|22:27:56|WY63_dummy1
-psk_id2|0809_accnt1||LSE_dummy1|99AN_cusip_2|01/01/2024|USD|200000.00|1121_comp1|01/01/2024|22:27:56|01/01/2024|22:27:56|WY63_dummy1
-psk_id3|0809_accnt3||LSE_dummy1|99AN_cusip_3|01/01/2024|USD|190000.00|1345_comp2|01/01/2024|22:27:56|01/01/2024|22:27:56|WY63_dummy1
